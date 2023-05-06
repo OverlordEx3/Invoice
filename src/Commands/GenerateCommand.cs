@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using invoice.Core;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -20,64 +22,129 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
+        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
+
         // Get file
-        var inputFilePath = "./Assets/Invoice.html";
+        var inputFilePath = Path.GetFullPath("./Assets/Invoice.html");
 
         var invoice = new Invoice(inputFilePath);
 
-        var outputFilePath = settings.OutputFileName;
-        if (string.IsNullOrEmpty(outputFilePath))
-        {
-            outputFilePath = "invoice.html";
-        }
+        var outputHtml = Path.GetTempFileName();
+        outputHtml = Path.ChangeExtension(outputHtml, ".html");
 
-        var result = await invoice.GenerateInvoiceAsync(outputFilePath,
-            replaceToken: (token) =>
+        var result = await invoice.GenerateInvoiceAsync(outputHtml,
+            replaceToken: async (token, ct) =>
             {
-                // TODO add read from dictionary
-                // Prompt name
+                var replacement = await dictionary.GetValue(token.Key, ct);
+                switch (token)
+                {
+                    case IncrementToken inc:
+                        if (replacement is null)
+                        {
+                            // If user not requested interactivity, or console does not support it, cancel and leave
+                            if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
+                            {
+                                token.Cancel();
+                                return;
+                            }
 
-                // prompt address
+                            replacement = AnsiConsole.Prompt(new TextPrompt<int>($"[NUM] {inc.Key}: ")).ToString();
+                            await dictionary.SetValue(token.Key, replacement, ct);
+                        }
 
-                // prompt state
+                        if (false == int.TryParse(replacement, out var increment))
+                        {
+                            token.Cancel();
+                            return;
+                        }
 
-                // Prompt country
+                        inc.Increment(++increment);
 
-                // prompt invoice to name
+                        await dictionary.SetValue(token.Key, increment.ToString(), ct);
+                        break;
 
-                // prompt invoice to address
+                    case StringToken tk:
+                        if (replacement is null)
+                        {
+                            // If user not requested interactivity, or console does not support it, cancel and leave
+                            if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
+                            {
+                                token.Cancel();
+                                return;
+                            }
 
-                // prompt invoice to state
+                            replacement = AnsiConsole.Prompt(new TextPrompt<string>($"[ALPHANUM] {tk.Key}: "));
+                            await dictionary.SetValue(token.Key, replacement, ct);
+                        }
 
-                // prompt amount
+                        tk.SetValue(replacement);
+                        break;
 
-                // prompt payment instructions bank
-
-                // prompt payment instructions routing
-
-                // prompt payment instructions account
+                    default:
+                        token.Cancel();
+                        return;
+                }
             });
 
         if (result == false)
         {
-            AnsiConsole.WriteLine("Failed to write output file {0}", outputFilePath);
+            AnsiConsole.WriteLine("Failed to write output file {0}", outputHtml);
             return -1;
         }
 
-        result = await PrintToPdfAsync(outputFilePath);
+        var outputFilePath = settings.OutputFileName;
+        if (string.IsNullOrEmpty(outputFilePath))
+        {
+            outputFilePath = Path.Combine(Directory.GetCurrentDirectory(), "invoice.pdf");
+        }
+        outputFilePath = Path.GetFullPath(outputFilePath);
+
+
+
+        result = await PrintToPdfAsync(outputHtml, outputFilePath);
         if (result == false)
         {
-            AnsiConsole.WriteLine("Failed to generate PDF", outputFilePath);
+            AnsiConsole.WriteLine("Failed to generate PDF at '{0}'", outputFilePath);
             return -1;
         }
 
         AnsiConsole.WriteLine("Generated PDF invoice");
-        return result ? 0 : -1;
+        return 0;
     }
 
-    private async Task<bool> PrintToPdfAsync(string outputHtmlPath)
+    private static Task<bool> PrintToPdfAsync(string outputHtmlPath, string outputPdf)
     {
-        // TODO I promise
-        return false;
+        var uri = new Uri(outputHtmlPath);
+
+        var driverOptions = new ChromeOptions
+        {
+            PageLoadStrategy = PageLoadStrategy.Eager,
+        };
+        // In headless mode, PDF writing is enabled by default
+        driverOptions.AddArgument("--headless=new");
+        var driver = new ChromeDriver(driverOptions);
+
+        using (driver)
+        {
+            driver.Navigate().GoToUrl(uri);
+            
+            var printOptions = new PrintOptions
+            {
+                Orientation = PrintOrientation.Portrait,
+                ScaleFactor = 1.0,
+                PageDimensions =
+                {
+                    HeightInInches = 297 / 25.4,
+                    WidthInInches = 210 / 25.4,
+                },
+                OutputBackgroundImages = true,
+            };
+
+            var printDocument = driver.Print(printOptions);
+            printDocument.SaveAsFile(outputPdf);
+            driver.Close();
+        }
+
+        return Task.FromResult(true);
     }
 }

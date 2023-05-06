@@ -22,6 +22,8 @@ app.Configure(config =>
             .WithDescription("Get value from dictionary");
         configurator.AddCommand<DictionaryListValuesCommand>("list")
             .WithDescription("List values in dictionary");
+        configurator.AddCommand<DictionaryImportCommand>("import")
+            .WithDescription("Imports data into dictionary");
     }); 
 
 #if DEBUG

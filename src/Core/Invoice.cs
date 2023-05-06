@@ -18,7 +18,7 @@ internal sealed class Invoice
         FilePath = filePath;
     }
 
-    public Task<bool> GenerateInvoiceAsync(string outputFilePath, Action<Token> replaceToken, CancellationToken cancellationToken = default)
+    public async Task<bool> GenerateInvoiceAsync(string outputFilePath, Func<Token, CancellationToken, Task> replaceToken, CancellationToken cancellationToken = default)
     {
         var inputDocument = new HtmlDocument();
 
@@ -40,12 +40,23 @@ internal sealed class Invoice
                 
                 var token = Token.Create(rawValue, name, type, parameters);
 
-                replaceToken(token);
+                // Maybe token has value
+                if (token.NeedsValue)
+                {
+                    await replaceToken(token, cancellationToken);
+                }
+
+                if (token.IsCancelled)
+                {
+                    return false;
+                }
 
                 if (token.NeedsValue)
                 {
                     throw new InvalidOperationException("Token still needs value!");
                 }
+
+                token.Replace(lineBuilder);
             }
             
             // Replace value
@@ -55,7 +66,7 @@ internal sealed class Invoice
         // Save
         SaveDocumentToFile(document: inputDocument,  outputFilePath: outputFilePath);
 
-        return Task.FromResult(false);
+        return true;
     }
 
     private static void LoadDocumentFromFile(HtmlDocument document, string inputFilePath)
@@ -79,6 +90,8 @@ internal abstract class Token
 
     public string Key { get; }
 
+    public bool IsCancelled { get; private set; } = false;
+
 
     [MemberNotNullWhen(false, nameof(Replacement))]
     public bool NeedsValue => Replacement is null;
@@ -98,9 +111,6 @@ internal abstract class Token
                 token.SetDate(DateTimeOffset.Now);
                 return token;
 
-            case "date":
-                return new DateToken(raw, name, parameters);
-                
             case "inc":
                 return new IncrementToken(raw, name);
 
@@ -116,6 +126,11 @@ internal abstract class Token
         {
             Replacement = replacement;
         }
+    }
+
+    public void Cancel()
+    {
+        IsCancelled = true;
     }
 
     public void Replace(StringBuilder stringBuilder)

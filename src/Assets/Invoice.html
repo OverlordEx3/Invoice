@@ -251,7 +251,7 @@
             <!-- Invoice date -->
             <div class="section-row key-value-row bordered">
                 <p class="key">Date:</p>
-                <p class="value">{{invoice-date:Now}}</p>
+                <p class="value">{{invoice-date:Now("dd-MMM-yy")}}</p>
             </div>
 
             <div class="section-row key-value-row bordered">
@@ -281,7 +281,7 @@
                 <tr></tr>
                 <tr>
 	                <!--April 2023-->
-                    <td>{{invoice-item-month:Date("MM yyyy")}} Professional Services</td>
+                    <td>{{invoice-item-month:Now("MMMM yyyy")}} Professional Services</td>
                     <td>${{amount}}</td>
                 </tr>
                 <tr></tr>

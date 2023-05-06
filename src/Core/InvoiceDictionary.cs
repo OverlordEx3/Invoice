@@ -206,8 +206,8 @@ internal sealed class InvoiceDictionary
             CommandType = CommandType.Text,
             Connection = connection
         };
-
-        return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+        
+        return await command.ExecuteNonQueryAsync(cancellationToken) == 0;
     }
 
     private static long ComputeHash(HashAlgorithm algorithm, string key)
