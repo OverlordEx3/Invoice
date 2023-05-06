@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+    <style>
+        :root {
+            --a4-height: 297mm;
+            --a4-width: 210mm;
+            --cell-height: 4.41mm;
+            --absolute-left-margin: 6.53mm;
+            --absolute-right-margin: 19.4mm;
+            --absolute-top-margin: 10mm;
+            --absolute-bottom-margin: 10mm;
+            /* Values are LEFT-TOP-RIGHT-BOTTOM */
+            --a4-format-margins: 15mm 10mm 10mm 10mm;
+            --primary-color: #D8E4E8;
+        }
+
+        /* Reset margin and paddings for everything */
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        html {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Specify A4 format for body - everything underneath it must complain */
+        body {
+            width: var(--a4-width);
+            height: var(--a4-height);
+            margin: var(--a4-format-margins)
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .bordered {
+            border-color: black;
+            border-width: .25mm;
+            border-style: solid;
+        }
+
+        /* Arranges top elements as row */
+        .row-container {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 15.35mm;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /*
+            Left column section
+        */
+        .left-column {
+            margin-left: var(--absolute-left-margin);
+            width: 104.07mm;
+        }
+
+            .left-column > .column-header {
+                background-color: var(--primary-color);
+                font-size: 28px;
+            }
+
+            /* Add top margin of a cell to every immediate descendant div
+           except for the header */
+            .left-column > div:not(.column-header) {
+                margin-top: var(--cell-height);
+            }
+
+        /* Those are arbitrary values based on spreadsheet's layout */
+        .right-column {
+            margin-right: var(--absolute-right-margin);
+            margin-left: 16.23mm; /* Inter column margin */
+            width: 49.92mm;
+        }
+
+            .right-column > .column-header {
+                color: var(--primary-color);
+                font-size: 33px;
+            }
+
+            /* Add top margin of a cell to every immediate descendant div
+           except for the header */
+            .right-column > div:not(.column-header) {
+                margin-top: var(--cell-height);
+            }
+
+        .bottom-table {
+            margin-top: var(--cell-height);
+            margin-left: var(--absolute-left-margin);
+            margin-right: var(--absolute-right-margin);
+            width: 170.22;
+        }
+
+        .section-title {
+            font-weight: bold;
+        }
+
+        .section-row {
+            padding-left: 1mm;
+            padding-right: 1mm;
+            height: 4.41mm;
+            align-items: center;
+        }
+
+        .key-value-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .key {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .value {
+            text-align: right;
+        }
+
+        .items {
+            border-collapse: collapse;
+        }
+
+            .items tr {
+                height: 6.88mm;
+            }
+
+            .items td {
+                padding-left: 1mm;
+                padding-right: 1mm;
+            }
+
+            .items tbody > tr {
+                border-left: 0.1mm solid black;
+            }
+
+        .items-header {
+            border: 0.1mm solid black;
+        }
+
+            .items-header th {
+                background-color: #D8E4E8;
+                border: 0.1mm solid black;
+                margin: 0;
+            }
+
+        .items colgroup > col:first-child {
+            width: 143.94mm;
+        }
+
+        .items colgroup > col:last-child {
+            width: 26.28mm;
+            border-left: 0.1mm solid black;
+            border-right: 0.1mm solid black;
+        }
+
+        /* Every second cell is right aligned */
+        .items tr > td:nth-child(2) {
+            text-align: right;
+        }
+
+        /* This could be solved using an ID, but I wanted to test
+           my (and chatgpt's) css knowledge.
+           Select the first data value from the last row, which contains
+           'Total' label */
+        .items tr:last-child > td:first-child {
+            border-left: none;
+            border-bottom: none;
+            font-weight: bold;
+            text-align: right;
+        }
+
+            .items tr:last-child > td:first-child > p {
+                padding-right: 1.5mm;
+            }
+
+        .items tr:last-child > td:last-child {
+            border-bottom: 0.1mm solid black;
+        }
+
+        .items tfoot > tr:last-child > td:first-child {
+            border-left: none;
+            border-top: 0.1mm solid black;
+        }
+
+        .items tfoot > tr:last-child > td:last-child {
+            border-top: 0.1mm solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="row-container">
+        <div class="left-column">
+
+            <!-- Name -->
+            <div class="column-header bordered">
+                <p>{{name}}</p>
+            </div>
+
+            <!-- Address -->
+            <div class="bordered">
+                <div class="section-row">
+                    <p>{{address}}</p>
+                </div>
+                <div class="section-row">
+                    <p>{{state}}</p>
+                </div>
+                <!-- Empty row -->
+                <div class="section-row"></div>
+            </div>
+
+            <!-- Invoice to -->
+            <div class="bordered">
+                <div class="section-row">
+                    <p class="section-title">Invoice to:</p>
+                </div>
+                <div class="section-row">
+                    <p>{{invoice-to}}</p>
+                </div>
+                <div class="section-row">
+                    <p>{{invoice-to-address}}</p>
+                </div>
+                <div class="section-row">
+                    <p>{{invoice-to-state}}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <!-- Invoice header -->
+            <div class="column-header bordered">
+                <p>Invoice</p>
+            </div>
+
+            <!-- Invoice date -->
+            <div class="section-row key-value-row bordered">
+                <p class="key">Date:</p>
+                <p class="value">{{invoice-date:Now}}</p>
+            </div>
+
+            <div class="section-row key-value-row bordered">
+                <p class="key">Invoice #</p>
+                <p class="value">{{invoice-number:Inc}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-table">
+        <table class="items">
+            <colgroup>
+                <col>
+                <col>
+            </colgroup>
+
+            <!-- Header -->
+            <thead class="items-header">
+                <tr>
+                    <th class="section-title uppercase">Description</th>
+                    <th class="section-title uppercase">Amount</th>
+                </tr>
+            </thead>
+
+            <!-- Data -->
+            <tbody>
+                <tr></tr>
+                <tr>
+	                <!--April 2023-->
+                    <td>{{invoice-item-month:Date("MM yyyy")}} Professional Services</td>
+                    <td>${{amount}}</td>
+                </tr>
+                <tr></tr>
+                <tr>
+                    <td>Payment Instructions:</td>
+                </tr>
+                <tr></tr>
+                <tr>
+                    <td class="bold">Bank: {{bank}}</td>
+                </tr>
+                <tr>
+                    <td>Routing (ABA): {{aba}}</td>
+                </tr>
+                <tr>
+                    <td>Account Number: {{account}}</td>
+                </tr>
+                <tr>
+                    <td>Amount: $ {{amount}}</td>
+                </tr>
+                <tr></tr>
+                <tr></tr>
+                <tr></tr>
+                <tr></tr>
+                <tr></tr>
+                <tr></tr>
+                <tr></tr>
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <td class="section-title uppercase">Total</td>
+                    <td class="value">${{amount}}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</body>
+
+</html>
