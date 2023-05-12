@@ -19,13 +19,19 @@ internal sealed class DictionaryGetValueCommand : AsyncCommand<DictionaryGetValu
         public string[] Keys { get; }
     }
 
+    private readonly InvoiceDictionary _dictionary;
+
+    public DictionaryGetValueCommand(InvoiceDictionary dictionary)
+    {
+        _dictionary = dictionary;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
 
-        foreach (var key in settings.Keys)
+        foreach (var key in settings.Keys.DistinctBy(s => s.ToLowerInvariant()))
         {
-            var result = await dictionary.GetValue(key);
+            var result = await _dictionary.GetValue(key);
             AnsiConsole.Write($"{key}: ");
             AnsiConsole.WriteLine(result ?? "null");
         }

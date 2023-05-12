@@ -18,6 +18,8 @@ serviceCollection.AddSingleton(_ => new ApplicationVersion(version, codeName));
 serviceCollection.AddSingleton<IFileSystem>(_ => new FileSystem());
 serviceCollection.AddSingleton<IDateTimeProvider>(_ => DateTimeProvider.Instance);
 
+serviceCollection.AddSingleton(_ => new InvoiceDictionary("Data Source=dict.db;"));
+
 var registrar = new TypeRegistrar(serviceCollection);
 
 var app = new CommandApp(registrar);

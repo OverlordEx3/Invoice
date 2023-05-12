@@ -24,6 +24,13 @@ internal sealed class DictionaryListValuesCommand : AsyncCommand<DictionaryListV
         public int? Limit { get; }
     }
 
+    private readonly InvoiceDictionary _dictionary;
+
+    public DictionaryListValuesCommand(InvoiceDictionary dictionary)
+    {
+        _dictionary = dictionary;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         if (settings.Offset < 0)
@@ -38,8 +45,7 @@ internal sealed class DictionaryListValuesCommand : AsyncCommand<DictionaryListV
             return -1;
         }
 
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
-        var result = (await dictionary.GetValues(settings.Offset ?? 0, settings.Limit ?? 10)).ToList();
+        var result = (await _dictionary.GetValues(settings.Offset ?? 0, settings.Limit ?? 10)).ToList();
 
         AnsiConsole.WriteLine("Count: {0}", result.Count);
         AnsiConsole.WriteLine("----------------------");

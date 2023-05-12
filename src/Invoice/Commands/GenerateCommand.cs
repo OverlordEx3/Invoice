@@ -23,17 +23,17 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 
     private readonly IFileSystem _fileSystem;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly InvoiceDictionary _dictionary;
 
-    public GenerateCommand(IFileSystem fileSystem, IDateTimeProvider dateTimeProvider)
+    public GenerateCommand(IFileSystem fileSystem, IDateTimeProvider dateTimeProvider, InvoiceDictionary dictionary)
     {
         _fileSystem = fileSystem;
         _dateTimeProvider = dateTimeProvider;
+        _dictionary = dictionary;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
-
         // Get file
         var inputFilePath = _fileSystem.Path.GetFullPath("./Assets/Invoice.html");
 
@@ -46,7 +46,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
         var result = await invoice.GenerateInvoiceAsync(outputHtml,
             replaceToken: async (token, ct) =>
             {
-                var replacement = await dictionary.GetValue(token.Key, ct);
+                var replacement = await _dictionary.GetValue(token.Key, ct);
                 switch (token)
                 {
                     case IncrementToken inc:
@@ -61,7 +61,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                             }
 
                             replacement = AnsiConsole.Prompt(new TextPrompt<int>($"[NUM] {inc.Key}: ")).ToString();
-                            await dictionary.SetValue(token.Key, replacement, ct);
+                            await _dictionary.SetValue(token.Key, replacement, ct);
                         }
 
                         if (false == int.TryParse(replacement, out var increment))
@@ -73,7 +73,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 
                         inc.Increment(++increment);
 
-                        await dictionary.SetValue(token.Key, increment.ToString(), ct);
+                        await _dictionary.SetValue(token.Key, increment.ToString(), ct);
                         break;
 
                     case StringToken tk:
@@ -88,7 +88,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                             }
 
                             replacement = AnsiConsole.Prompt(new TextPrompt<string>($"[ALPHANUM] {tk.Key}: "));
-                            await dictionary.SetValue(token.Key, replacement, ct);
+                            await _dictionary.SetValue(token.Key, replacement, ct);
                         }
 
                         tk.SetValue(replacement);

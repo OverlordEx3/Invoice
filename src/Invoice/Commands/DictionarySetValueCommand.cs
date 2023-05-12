@@ -38,20 +38,25 @@ internal sealed class DictionarySetValueCommand : AsyncCommand<DictionarySetValu
         }
     }
 
+    private readonly InvoiceDictionary _dictionary;
+
+    public DictionarySetValueCommand(InvoiceDictionary dictionary)
+    {
+        _dictionary = dictionary;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
-
         foreach (var (key, value) in GetKeyValues(settings.Values))
         {
             // Remove empty values
             if (string.IsNullOrWhiteSpace(value))
             {
-                await dictionary.RemoveValue(key);
+                await _dictionary.RemoveValue(key);
                 continue;
             }
 
-            await dictionary.SetValue(key, value);
+            await _dictionary.SetValue(key, value);
         }
 
         return 0;

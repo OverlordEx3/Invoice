@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "invoice": {
-      "commandName": "Project",
-      "commandLineArgs": "version"
-    }
-  }
-}

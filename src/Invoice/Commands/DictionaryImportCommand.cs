@@ -22,15 +22,16 @@ internal sealed class DictionaryImportCommand : AsyncCommand<DictionaryImportCom
 
 
     private readonly IFileSystem _fileSystem;
+    private readonly InvoiceDictionary _dictionary;
 
-    public DictionaryImportCommand(IFileSystem fileSystem)
+    public DictionaryImportCommand(IFileSystem fileSystem, InvoiceDictionary dictionary)
     {
         _fileSystem = fileSystem;
+        _dictionary = dictionary;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        int imported = 0, failed = 0;
         var fileName = _fileSystem.Path.GetFullPath(settings.FileName);
         if (false == _fileSystem.File.Exists(fileName))
         {
@@ -66,14 +67,13 @@ internal sealed class DictionaryImportCommand : AsyncCommand<DictionaryImportCom
             }
         }
 
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
-
+        int imported = 0, failed = 0;
         foreach (var (key, value) in importedDictionary)
         {
             bool success;
             if (string.IsNullOrWhiteSpace(value))
             {
-                success = await dictionary.RemoveValue(key);
+                success = await _dictionary.RemoveValue(key);
                 if (success)
                 {
                     imported++;
@@ -85,7 +85,7 @@ internal sealed class DictionaryImportCommand : AsyncCommand<DictionaryImportCom
             }
             else
             {
-                success = await dictionary.SetValue(key, value);
+                success = await _dictionary.SetValue(key, value);
                 if (success)
                 {
                     imported++;
