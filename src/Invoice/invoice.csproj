@@ -8,11 +8,12 @@
     <Company />
     <FileVersion>1.0.1.0</FileVersion>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <Authors>Exequiel Beker</Authors>
+    <Product>Invoice generator</Product>
+    <Copyright>Copyright (c) 2023 Exequiel Beker - MIT License</Copyright>
+    <AssemblyName>invoice</AssemblyName>
+    <Title>Invoice tools</Title>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="Core\" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
@@ -35,5 +36,6 @@
 			<_Parameter1>$(AssemblyName).Tests</_Parameter1>
 		</AssemblyAttribute>
 	</ItemGroup>
+
 
 </Project>
