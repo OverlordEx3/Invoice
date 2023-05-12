@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.IO.Abstractions;
+using System.Reflection;
 using Invoice.Core;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -35,7 +36,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         // Get file
-        var inputFilePath = _fileSystem.Path.GetFullPath("./Assets/Invoice.html");
+        var inputFilePath = _fileSystem.Path.Combine(Assembly.GetExecutingAssembly().Location, "Assets", "Invoice.html");
 
         var invoice = new Core.Invoice(inputFilePath, _fileSystem.File, _dateTimeProvider);
 
