@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
-using invoice.Core;
+using Invoice.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace invoice.Commands;
+namespace Invoice.Commands;
 
 internal sealed class DictionaryListValuesCommand : AsyncCommand<DictionaryListValuesCommand.Settings>
 {
@@ -26,9 +26,23 @@ internal sealed class DictionaryListValuesCommand : AsyncCommand<DictionaryListV
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
-        var result = await dictionary.GetValues(settings.Offset ?? 0, settings.Limit ?? 10);
+        if (settings.Offset < 0)
+        {
+            AnsiConsole.WriteLine("Invalid offset value");
+            return -1;
+        }
 
+        if (settings.Limit < 0)
+        {
+            AnsiConsole.WriteLine("Invalid limit value");
+            return -1;
+        }
+
+        var dictionary = new InvoiceDictionary("Data Source=dict.db;");
+        var result = (await dictionary.GetValues(settings.Offset ?? 0, settings.Limit ?? 10)).ToList();
+
+        AnsiConsole.WriteLine("Count: {0}", result.Count);
+        AnsiConsole.WriteLine("----------------------");
         foreach (var (key, value) in result)
         {
             AnsiConsole.Write($"{key}: ");

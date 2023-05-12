@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
-using invoice.Core;
+using Invoice.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace invoice.Commands;
+namespace Invoice.Commands;
 
 internal sealed class DictionaryGetValueCommand : AsyncCommand<DictionaryGetValueCommand.Settings>
 {

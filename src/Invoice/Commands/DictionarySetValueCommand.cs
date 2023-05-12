@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
-using invoice.Core;
+using Invoice.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace invoice.Commands;
+namespace Invoice.Commands;
 
 internal sealed class DictionarySetValueCommand : AsyncCommand<DictionarySetValueCommand.Settings>
 {
@@ -25,6 +25,7 @@ internal sealed class DictionarySetValueCommand : AsyncCommand<DictionarySetValu
                 return ValidationResult.Error("No values provided");
             }
 
+            // Validate every value is a key=value pair
             foreach (var value in Values)
             {
                 if (value.Count(c => c == '=') != 1)
@@ -43,6 +44,7 @@ internal sealed class DictionarySetValueCommand : AsyncCommand<DictionarySetValu
 
         foreach (var (key, value) in GetKeyValues(settings.Values))
         {
+            // Remove empty values
             if (string.IsNullOrWhiteSpace(value))
             {
                 await dictionary.RemoveValue(key);
@@ -55,10 +57,14 @@ internal sealed class DictionarySetValueCommand : AsyncCommand<DictionarySetValu
         return 0;
     }
 
+    /// <summary>
+    /// Splits every value in <paramref name="values"/> to extract every key with their upsert value.
+    /// </summary>
     private static IEnumerable<KeyValuePair<string, string>> GetKeyValues(IEnumerable<string> values)
     {
         foreach (var value in values)
         {
+            // We consider only the first two parts
             var parts = value.Split('=', 2);
             yield return new KeyValuePair<string, string>(parts[0], parts[1]);
         }

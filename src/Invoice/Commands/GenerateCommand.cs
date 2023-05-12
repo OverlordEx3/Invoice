@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel;
-using invoice.Core;
+using System.IO.Abstractions;
+using Invoice.Core;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace invoice.Commands;
+namespace Invoice.Commands;
 
 internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 {
@@ -20,17 +21,27 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
         public bool? IsInteractive { get; init; } = false;
     }
 
+    private readonly IFileSystem _fileSystem;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public GenerateCommand(IFileSystem fileSystem, IDateTimeProvider dateTimeProvider)
+    {
+        _fileSystem = fileSystem;
+        _dateTimeProvider = dateTimeProvider;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var dictionary = new InvoiceDictionary("Data Source=dict.db;");
 
         // Get file
-        var inputFilePath = Path.GetFullPath("./Assets/Invoice.html");
+        var inputFilePath = _fileSystem.Path.GetFullPath("./Assets/Invoice.html");
 
-        var invoice = new Invoice(inputFilePath);
+        var invoice = new Core.Invoice(inputFilePath, _fileSystem.File, _dateTimeProvider);
 
-        var outputHtml = Path.GetTempFileName();
-        outputHtml = Path.ChangeExtension(outputHtml, ".html");
+        var outputHtml = _fileSystem.Path.GetTempFileName();
+        // Force the file to have .html extension to allow invoice generation to read the file // TODO I should change this to streams
+        outputHtml = _fileSystem.Path.ChangeExtension(outputHtml, ".html");
 
         var result = await invoice.GenerateInvoiceAsync(outputHtml,
             replaceToken: async (token, ct) =>
@@ -44,6 +55,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                             // If user not requested interactivity, or console does not support it, cancel and leave
                             if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
                             {
+                                AnsiConsole.WriteLine("Token '{0}' not found.", token.Key);
                                 token.Cancel();
                                 return;
                             }
@@ -54,6 +66,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 
                         if (false == int.TryParse(replacement, out var increment))
                         {
+                            AnsiConsole.WriteLine("Token '{0}' has an invalid value format and cannot be parsed.", token.Key);
                             token.Cancel();
                             return;
                         }
@@ -69,6 +82,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                             // If user not requested interactivity, or console does not support it, cancel and leave
                             if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
                             {
+                                AnsiConsole.WriteLine("Token '{0}' not found", token.Key);
                                 token.Cancel();
                                 return;
                             }
@@ -95,11 +109,23 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
         var outputFilePath = settings.OutputFileName;
         if (string.IsNullOrEmpty(outputFilePath))
         {
-            outputFilePath = Path.Combine(Directory.GetCurrentDirectory(), "invoice.pdf");
+            outputFilePath = _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "invoice.pdf");
         }
-        outputFilePath = Path.GetFullPath(outputFilePath);
 
+        outputFilePath = _fileSystem.Path.GetFullPath(outputFilePath);
+        // If output path given is not empty, but is not a file. We got nothing to do here :)
+        if (_fileSystem.Path.EndsInDirectorySeparator(outputFilePath))
+        {
+            AnsiConsole.WriteLine("Output path {0} is not a valid file", outputFilePath);
+            return -1;
+        }
 
+        //Validate extension. We expect pdf files for printing.
+        if (_fileSystem.Path.GetExtension(outputFilePath).ToLowerInvariant() != ".pdf")
+        {
+            AnsiConsole.WriteLine("Output path {0} is not a pdf file", outputFilePath);
+            return -1;
+        }
 
         result = await PrintToPdfAsync(outputHtml, outputFilePath);
         if (result == false)
@@ -108,7 +134,6 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
             return -1;
         }
 
-        AnsiConsole.WriteLine("Generated PDF invoice");
         return 0;
     }
 

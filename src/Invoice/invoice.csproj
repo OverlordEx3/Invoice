@@ -5,6 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Company />
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +15,11 @@
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Selenium.WebDriver" Version="4.9.0" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.46.0" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="19.2.22" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="19.2.22" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,5 +27,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>$(AssemblyName).Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 
 </Project>

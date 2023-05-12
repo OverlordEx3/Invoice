@@ -1,9 +1,26 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using invoice.Commands;
+using System.IO.Abstractions;
+using System.Reflection;
+using Invoice;
+using Invoice.Commands;
+using Invoice.Core;
+using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
-var app = new CommandApp();
+const string codeName = "Helium";
+
+var serviceCollection = new ServiceCollection();
+
+var version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 1);
+
+serviceCollection.AddSingleton(_ => new ApplicationVersion(version, codeName));
+serviceCollection.AddSingleton<IFileSystem>(_ => new FileSystem());
+serviceCollection.AddSingleton<IDateTimeProvider>(_ => DateTimeProvider.Instance);
+
+var registrar = new TypeRegistrar(serviceCollection);
+
+var app = new CommandApp(registrar);
 
 app.Configure(config =>
 {
@@ -24,7 +41,9 @@ app.Configure(config =>
             .WithDescription("List values in dictionary");
         configurator.AddCommand<DictionaryImportCommand>("import")
             .WithDescription("Imports data into dictionary");
-    }); 
+    });
+
+    config.AddCommand<VersionCommand>("version").WithDescription("Get version");
 
 #if DEBUG
     config.PropagateExceptions();
