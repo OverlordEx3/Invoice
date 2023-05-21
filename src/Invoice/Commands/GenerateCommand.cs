@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.IO.Abstractions;
-using System.Reflection;
 using Invoice.Core;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -35,8 +34,8 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        // Get file
-        var inputFilePath = _fileSystem.Path.Combine(Assembly.GetExecutingAssembly().Location, "Assets", "Invoice.html");
+        // Get file // TODO make this a parameter
+        var inputFilePath = _fileSystem.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Invoice.html");
 
         var invoice = new Core.Invoice(inputFilePath, _fileSystem.File, _dateTimeProvider);
 
@@ -54,14 +53,14 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                         if (replacement is null)
                         {
                             // If user not requested interactivity, or console does not support it, cancel and leave
-                            if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
+                            if (true != settings.IsInteractive || !AnsiConsole.Profile.Capabilities.Interactive)
                             {
                                 AnsiConsole.WriteLine("Token '{0}' not found.", token.Key);
                                 token.Cancel();
                                 return;
                             }
 
-                            replacement = AnsiConsole.Prompt(new TextPrompt<int>($"[NUM] {inc.Key}: ")).ToString();
+                            replacement = AnsiConsole.Prompt(new TextPrompt<int>($"[NUM] {inc.Key}: ".EscapeMarkup())).ToString();
                             await _dictionary.SetValue(token.Key, replacement, ct);
                         }
 
@@ -81,14 +80,14 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
                         if (replacement is null)
                         {
                             // If user not requested interactivity, or console does not support it, cancel and leave
-                            if (true != settings.IsInteractive || AnsiConsole.Profile.Capabilities.Interactive)
+                            if (true != settings.IsInteractive || !AnsiConsole.Profile.Capabilities.Interactive)
                             {
                                 AnsiConsole.WriteLine("Token '{0}' not found", token.Key);
                                 token.Cancel();
                                 return;
                             }
 
-                            replacement = AnsiConsole.Prompt(new TextPrompt<string>($"[ALPHANUM] {tk.Key}: "));
+                            replacement = AnsiConsole.Prompt(new TextPrompt<string>($"[ALPHANUM] {tk.Key}: ".EscapeMarkup()));
                             await _dictionary.SetValue(token.Key, replacement, ct);
                         }
 
@@ -128,17 +127,19 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
             return -1;
         }
 
-        result = await PrintToPdfAsync(outputHtml, outputFilePath);
+        var chromeDriverPath = _fileSystem.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Binaries");
+        result = await PrintToPdfAsync(chromeDriverPath, outputHtml, outputFilePath);
         if (result == false)
         {
             AnsiConsole.WriteLine("Failed to generate PDF at '{0}'", outputFilePath);
             return -1;
         }
 
+        AnsiConsole.WriteLine($"Generated invoice {_fileSystem.Path.GetFileName(outputFilePath)}");
         return 0;
     }
 
-    private static Task<bool> PrintToPdfAsync(string outputHtmlPath, string outputPdf)
+    private static Task<bool> PrintToPdfAsync(string chromeDriverPath, string outputHtmlPath, string outputPdf)
     {
         var uri = new Uri(outputHtmlPath);
 
@@ -148,27 +149,33 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateCommand.Settings>
         };
         // In headless mode, PDF writing is enabled by default
         driverOptions.AddArgument("--headless=new");
-        var driver = new ChromeDriver(driverOptions);
 
-        using (driver)
+        var driverService = ChromeDriverService.CreateDefaultService(chromeDriverPath);
+        // Avoid writing output
+        driverService.HideCommandPromptWindow = true;
+        using (driverService)
         {
-            driver.Navigate().GoToUrl(uri);
-            
-            var printOptions = new PrintOptions
+            var driver = new ChromeDriver(driverService, driverOptions);
+            using (driver)
             {
-                Orientation = PrintOrientation.Portrait,
-                ScaleFactor = 1.0,
-                PageDimensions =
-                {
-                    HeightInInches = 297 / 25.4,
-                    WidthInInches = 210 / 25.4,
-                },
-                OutputBackgroundImages = true,
-            };
+                driver.Navigate().GoToUrl(uri);
 
-            var printDocument = driver.Print(printOptions);
-            printDocument.SaveAsFile(outputPdf);
-            driver.Close();
+                var printOptions = new PrintOptions
+                {
+                    Orientation = PrintOrientation.Portrait,
+                    ScaleFactor = 1.0,
+                    PageDimensions =
+                    {
+                        HeightInInches = 297 / 25.4,
+                        WidthInInches = 210 / 25.4,
+                    },
+                    OutputBackgroundImages = true,
+                };
+
+                var printDocument = driver.Print(printOptions);
+                printDocument.SaveAsFile(outputPdf);
+                driver.Close();
+            }
         }
 
         return Task.FromResult(true);

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -19,10 +19,10 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageReference Include="Selenium.WebDriver" Version="4.9.0" />
-    <PackageReference Include="Spectre.Console.Cli" Version="0.46.0" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="19.2.22" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="19.2.22" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.9.1" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.47.0" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="19.2.29" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="19.2.29" />
   </ItemGroup>
 
   <ItemGroup>
