@@ -14,11 +14,15 @@ var serviceCollection = new ServiceCollection();
 
 var version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 1);
 
+var fileSystem = new FileSystem();
+
 serviceCollection.AddSingleton(_ => new ApplicationVersion(version, codeName));
-serviceCollection.AddSingleton<IFileSystem>(_ => new FileSystem());
+serviceCollection.AddSingleton<IFileSystem>(_ => fileSystem);
 serviceCollection.AddSingleton<IDateTimeProvider>(_ => DateTimeProvider.Instance);
 
-serviceCollection.AddSingleton(_ => new InvoiceDictionary("Data Source=dict.db;"));
+var databasePath = fileSystem.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dict.db");
+
+serviceCollection.AddSingleton(_ => new InvoiceDictionary($"Data Source={databasePath};"));
 
 var registrar = new TypeRegistrar(serviceCollection);
 
